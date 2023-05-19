@@ -2,7 +2,7 @@
 #include "Defines.h"
 #include "Utils.h"
 #include "math/Matrix.h"
-
+#include "Shader.h"
 using MeshPtr = shared_ptr<class Mesh>;
 using ModelPtr = shared_ptr<class Model>;
 using Texture2DPtr = shared_ptr<class Texture2D>;
@@ -37,7 +37,7 @@ public:
 	unsigned int GetID() { return mID; }
 private:
 	unsigned int mID;
-	
+
 };
 
 
@@ -47,31 +47,36 @@ public:
 	{
 		this->mVertices = vertices;
 		this->mIndices = indices;
+		mMaterial.Albedo = Vector3((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
+
 		InitMesh();
 	}
 
-	void Draw();
-
-private:
 	unsigned int VBO, EBO;
 	vector<Vertex> mVertices;
 	vector<unsigned int> mIndices;
 	unsigned int VAO;
 
+	struct Material {
+		Vector3 Albedo = Vector3(1);
+		float Metallic = 0.1;
+		float Roughness = 1;
+		float Emission = 0;
+	}mMaterial;
+
 	void InitMesh();
 };
 
 class Model {
-	public:
-		Model(string const& path) { LoadModel(path); };
-
-		void Draw();
-	private:
-		void LoadModel(string const& path);
-		void ProcessNode(aiNode* node, const aiScene* scene);
-		MeshPtr ProcessMesh(aiMesh* mesh, const aiScene* scene);
-	private:
-		vector<MeshPtr> mMesh;
+public:
+	Model(string const& path) { LoadModel(path); };
+	vector<MeshPtr>& GetMesh() { return mMesh; }
+private:
+	void LoadModel(string const& path);
+	void ProcessNode(aiNode* node, const aiScene* scene);
+	MeshPtr ProcessMesh(aiMesh* mesh, const aiScene* scene);
+private:
+	vector<MeshPtr> mMesh;
 };
 
 

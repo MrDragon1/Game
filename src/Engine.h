@@ -8,8 +8,8 @@ class Engine {
 public:
 	Engine();
 
-		~Engine();
-	
+	~Engine();
+
 	static Engine* GetEngine() {
 		return sInstance;
 	}
@@ -39,28 +39,30 @@ public:
 	void SetMouseInvisible();
 	Vector2 GetViewportSize() { return Vector2(mWidth, mHeight); }
 	void ReadPixel();
-/// Scene
+	/// Scene
 private:
 	vector<CarPtr> mCars;
-	// vector<Wall*> mWalls;
+	vector<WallPtr> mWalls;
 	CameraPtr mCamera;
-	Vector3 mMove = Vector3(0,0,0);
+	Vector3 mMove = Vector3(0, 0, 0);
+	Vector3 mLightPos = Vector3(0, 5, 0);
 
 	Environment mEnvironment;
-/// Window
+	/// Window
 private:
 	size_t mWidth = 800;
 	size_t mHeight = 600;
 	GLFWwindow* mWindow;
 	static Engine* sInstance;
 
-/// Render 
+	/// Render 
 private:
 	const GLuint mShadowMapWidth = 1024, mShadowMapHeight = 1024;
-	GLuint mMainFBO = 0,mShadowFBO = 0;
+	GLuint mMainFBO = 0, mShadowFBO = 0;
 	GLuint mShadowMap = 0, mColorAttachment = 0, mIDAttachment = 0, mDepthAttachment = 0;
-	ShaderPtr mShadowShader, mMainShader, mPresentShader,mSkyboxShader;
+	ShaderPtr mShadowShader, mMainShader, mPresentShader, mSkyboxShader;
 	GLuint mPresentVAO, mPresentVBO;
 	ModelPtr mCube;
+	Texture2DPtr mLUT;
 };
 

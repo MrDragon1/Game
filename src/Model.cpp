@@ -1,14 +1,5 @@
 #include "Model.h"
 
-
-
-void Mesh::Draw()
-{
-	glBindVertexArray(VAO);
-	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mIndices.size()), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-}
-
 void Mesh::InitMesh()
 {
 	glGenVertexArrays(1, &VAO);
@@ -41,14 +32,6 @@ void Mesh::InitMesh()
 	glBindVertexArray(0);
 }
 
-void Model::Draw()
-{
-	for (auto& mesh:mMesh)
-	{
-		mesh->Draw();
-	}
-}
-
 void Model::LoadModel(string const& path)
 {
 	Assimp::Importer importer;
@@ -56,7 +39,7 @@ void Model::LoadModel(string const& path)
 	// check for errors
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 	{
-		INFO("ERROR::ASSIMP:: " , importer.GetErrorString());
+		INFO("ERROR::ASSIMP:: ", importer.GetErrorString());
 		return;
 	}
 	ProcessNode(scene->mRootNode, scene);
@@ -84,7 +67,7 @@ MeshPtr Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		Vertex vertex;
 		Vector3 vector;
-		
+
 		vector.x = mesh->mVertices[i].x;
 		vector.y = mesh->mVertices[i].y;
 		vector.z = mesh->mVertices[i].z;
@@ -100,7 +83,7 @@ MeshPtr Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		if (mesh->mTextureCoords[0])
 		{
 			Vector2 vec;
-			
+
 			vec.x = mesh->mTextureCoords[0][i].x;
 			vec.y = mesh->mTextureCoords[0][i].y;
 			vertex.TexCoords = vec;
@@ -139,7 +122,7 @@ TextureCube::TextureCube(int width, int height)
 	for (unsigned int i = 0; i < 6; i++) {
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
 	}
-	
+
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -175,7 +158,6 @@ Texture2D::Texture2D(int width, int height)
 
 void Texture2D::Bind(int slot)
 {
-	//glBindTextureUnit(slot, mID);
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_2D, mID);
 }

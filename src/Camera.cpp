@@ -13,7 +13,7 @@ Camera::Camera(float fov, float aspectRatio, float nearClip, float farClip)
 
 void Camera::UpdateProjection() {
 	auto v = Engine::GetEngine()->GetViewportSize();
-	mAspectRatio = v.x/ v.y;
+	mAspectRatio = v.x / v.y;
 	mProjection = Math::Perspective(Math::Radians(mFOV), mAspectRatio, mNearClip, mFarClip);
 }
 
@@ -26,7 +26,7 @@ float Camera::RotationSpeed() const { return 0.8f; }
 
 float Camera::ZoomSpeed() const { return 0.7f; }
 
-Vector3 Camera::MouseSpeed() const { return Vector3{ 0.1f, 0.1f, 0.07f }; };
+Vector3 Camera::MouseSpeed() const { return Vector3{ 0.03f, 0.03f, 0.03f }; };
 
 void Camera::UpdatePosition(CameraMovement move) {
 	if (mModifying) {
@@ -56,7 +56,7 @@ void Camera::UpdatePosition(CameraMovement move) {
 			break;
 		default:
 			break;
-		}	
+		}
 
 		MouseRotate(delta);
 		Engine::GetEngine()->SetMousePosition(mInitialMousePosition);
@@ -69,7 +69,7 @@ void Camera::UpdatePosition(CameraMovement move) {
 void Camera::OnRightButtonPressed() {
 	mModifying = true;
 	auto pos = Engine::GetEngine()->GetMousePosition();
-	mInitialMousePosition = {pos.first,pos.second};
+	mInitialMousePosition = { pos.first,pos.second };
 	Engine::GetEngine()->SetMouseInvisible();
 }
 

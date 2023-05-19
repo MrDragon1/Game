@@ -51,7 +51,11 @@ void Environment::Draw()
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mTextureCube->GetID(), 0);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		mCube->Draw();
+		for (auto mesh : mCube->GetMesh()) {
+			glBindVertexArray(mesh->VAO);
+			glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->mIndices.size()), GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+		}
 	}
 
 	// Convolution
@@ -67,7 +71,11 @@ void Environment::Draw()
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mEnvironmentCubeMap->GetID(), 0);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		mCube->Draw();
+		for (auto mesh : mCube->GetMesh()) {
+			glBindVertexArray(mesh->VAO);
+			glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->mIndices.size()), GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+		}
 	}
 
 	mEquirectangularToCubeMapShader->Use();
@@ -100,7 +108,11 @@ void Environment::Draw()
 			mPrefilterShader->SetMat4("u_View", captureViews[i]);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mReflectionCubeMap->GetID(), mip);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			mCube->Draw();
+			for (auto mesh : mCube->GetMesh()) {
+				glBindVertexArray(mesh->VAO);
+				glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->mIndices.size()), GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+			}
 		}
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
