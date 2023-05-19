@@ -1,6 +1,6 @@
 #include "Shader.h"
 
-Shader::Shader(const string& vertexPath, const string& fragmentPath)
+Shader::Shader(const string& vertexPath, const string& fragmentPath, const string& geometryPath)
 {
 	// 1. retrieve the vertex/fragment source code from filePath
 	std::string vertexCode;
@@ -44,16 +44,48 @@ Shader::Shader(const string& vertexPath, const string& fragmentPath)
 	glShaderSource(fragment, 1, &fShaderCode, NULL);
 	glCompileShader(fragment);
 	CheckCompileErrors(fragment, "FRAGMENT");
+
+
 	// shader Program
 	mID = glCreateProgram();
 	glAttachShader(mID, vertex);
 	glAttachShader(mID, fragment);
+	unsigned int geometry = 0;
+
+	if (!geometryPath.empty())
+	{
+		std::string geometryCode;
+		std::ifstream gShaderFile;
+		gShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		try
+		{
+			gShaderFile.open(geometryPath);
+			std::stringstream gShaderStream;
+			gShaderStream << gShaderFile.rdbuf();
+			gShaderFile.close();
+			geometryCode = gShaderStream.str();
+		}
+		catch (std::ifstream::failure& e)
+		{
+			std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+		}
+		const char* gShaderCode = geometryCode.c_str();
+
+		geometry = glCreateShader(GL_GEOMETRY_SHADER);
+		glShaderSource(geometry, 1, &gShaderCode, NULL);
+		glCompileShader(geometry);
+		CheckCompileErrors(geometry, "GEOMETRY");
+
+		glAttachShader(mID, geometry);
+	}
+
+
 	glLinkProgram(mID);
 	CheckCompileErrors(mID, "PROGRAM");
 	// delete the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
-
+	if (geometry) glDeleteShader(geometry);
 }
 
 void Shader::Use()
@@ -69,6 +101,11 @@ void Shader::SetInt(const std::string& name, int value)
 void Shader::SetFloat(const std::string& name, float value)
 {
 	glUniform1f(glGetUniformLocation(mID, name.c_str()), value);
+}
+
+void Shader::SetFloat3(const std::string& name, const Vector3& value)
+{
+	glUniform3fv(glGetUniformLocation(mID, name.c_str()), 1, Math::Ptr(value));
 }
 
 void Shader::SetMat3(const std::string& name, const Matrix3& value)

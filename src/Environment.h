@@ -13,8 +13,8 @@ public:
 	void Resize(int width, int height);
 
 	TextureCubePtr GetRadiance() { return mEnvironmentCubeMap; }
-	TextureCubePtr GetIrradianvce() { return mReflectionCubeMap; }
-
+	TextureCubePtr GetIrradiance() { return mReflectionCubeMap; }
+	Texture2DPtr mTexture;
 private:
 	GLuint mFramebuffer = 0;
 
@@ -28,9 +28,9 @@ private:
 	TextureCubePtr mEnvironmentCubeMap;
 	TextureCubePtr mReflectionCubeMap;
 
-	Texture2DPtr mTexture;
+
 	TextureCubePtr mTextureCube;
-	std::string mPath = "asset/texture/input.png";
+	std::string mPath = "asset/texture/Newport_Loft_Ref.hdr";
 
 	ModelPtr mCube;
 };

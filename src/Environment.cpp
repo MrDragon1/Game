@@ -2,7 +2,7 @@
 
 Environment::Environment()
 {
-	
+
 }
 
 void Environment::Init(int width, int height)
@@ -14,15 +14,15 @@ void Environment::Init(int width, int height)
 	mPrefilterShader = make_shared<class Shader>(mPrefilterShaderPath + ".vs", mPrefilterShaderPath + ".fs");
 	mConvolutionShader = make_shared<class Shader>(mConvolutionShaderPath + ".vs", mConvolutionShaderPath + ".fs");
 
-	mEnvironmentCubeMap = make_shared<TextureCube>(32,32);
+	mEnvironmentCubeMap = make_shared<TextureCube>(32, 32);
 
 	mReflectionCubeMap = make_shared<TextureCube>(512, 512);
 	mReflectionCubeMap->GenerateMipmaps();
 
 	mTextureCube = make_shared<TextureCube>(512, 512);
-	
+
 	Resize(width, height);
-}	
+}
 
 
 void Environment::Draw()
@@ -37,7 +37,6 @@ void Environment::Draw()
 								Math::LookAt(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, -1.0f, 0.0f)),
 								Math::LookAt(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, -1.0f), Vector3(0.0f, -1.0f, 0.0f)) };
 
-
 	glDepthFunc(GL_LEQUAL);
 	mEquirectangularToCubeMapShader->Use();
 	mEquirectangularToCubeMapShader->SetInt("u_EquirectangularMap0", 0);
@@ -49,7 +48,8 @@ void Environment::Draw()
 	for (int i = 0; i < 6; i++) {
 		mTexture->Bind(0);
 		mEquirectangularToCubeMapShader->SetMat4("u_View", captureViews[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,mTextureCube->GetID(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mTextureCube->GetID(), 0);
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		mCube->Draw();
 	}
@@ -109,6 +109,7 @@ void Environment::Draw()
 
 void Environment::Resize(int width, int height)
 {
+	glViewport(0, 0, width, height);
 	if (mFramebuffer)
 	{
 		glDeleteFramebuffers(1, &mFramebuffer);
@@ -116,17 +117,16 @@ void Environment::Resize(int width, int height)
 	glGenFramebuffers(1, &mFramebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
 
-	auto mColorAttachment0 = make_shared<Texture2D>(width, height);
-	auto mColorAttachment1 = make_shared<Texture2D>(width, height);
+	//auto mColorAttachment0 = make_shared<Texture2D>(width, height);
+	//auto mColorAttachment1 = make_shared<Texture2D>(width, height);
 
 	GLuint mDepthAttachment;
 	glGenTextures(1, &mDepthAttachment);
 	glBindTexture(GL_TEXTURE_2D, mDepthAttachment);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mColorAttachment0->GetID(), 0);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, mColorAttachment1->GetID(), 0);
+	//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mColorAttachment0->GetID(), 0);
+	//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, mColorAttachment1->GetID(), 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, mDepthAttachment, 0);
 
 	GLenum buffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };

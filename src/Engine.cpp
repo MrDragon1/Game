@@ -149,6 +149,10 @@ void Engine::Init()
 		glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 	}
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
+
 	PrepareFramebuffer();
 	PrepareShader();
 	PrepareScene();
@@ -179,8 +183,13 @@ void Engine::Run()
 
 void Engine::OnViewportChange(GLFWwindow* window, int width, int height)
 {
+	mWidth = width;
+	mHeight = height;
+
 	glViewport(0, 0, width, height);
 	mCamera->SetViewportSize();
+	
+	PrepareFramebuffer();
 }
 
 void Engine::OnMouseScroll(float offset)
@@ -235,11 +244,41 @@ void Engine::OnKeyEvent()
 
 void Engine::ShadowPass()
 {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
+	const Vector3 lightPos = Vector3(0, 2, 0);
+	GLfloat aspect = (GLfloat)mShadowMapWidth / (GLfloat)mShadowMapHeight;
+	GLfloat near = 0.1f;
+	GLfloat far = 100.0f;
+	Matrix4 shadowProj = Math::Perspective(90.0f, aspect, near, far);
+	std::vector<Matrix4> shadowTransforms;
+	shadowTransforms.push_back(shadowProj * Math::LookAt(lightPos, lightPos + Vector3(1.0, 0.0, 0.0), Vector3(0.0, -1.0, 0.0)));
+	shadowTransforms.push_back(shadowProj * Math::LookAt(lightPos, lightPos + Vector3(-1.0, 0.0, 0.0),Vector3(0.0, -1.0, 0.0)));
+	shadowTransforms.push_back(shadowProj * Math::LookAt(lightPos, lightPos + Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0)));
+	shadowTransforms.push_back(shadowProj * Math::LookAt(lightPos, lightPos + Vector3(0.0, -1.0, 0.0),Vector3(0.0, 0.0, -1.0)));
+	shadowTransforms.push_back(shadowProj * Math::LookAt(lightPos, lightPos + Vector3(0.0, 0.0, 1.0), Vector3(0.0, -1.0, 0.0)));
+	shadowTransforms.push_back(shadowProj * Math::LookAt(lightPos, lightPos + Vector3(0.0, 0.0, -1.0),Vector3(0.0, -1.0, 0.0)));
+
+	glViewport(0, 0, mShadowMapWidth, mShadowMapHeight);
+	glBindFramebuffer(GL_FRAMEBUFFER, mShadowFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	mShadowShader->Use();
+	for (GLuint i = 0; i < 6; ++i)
+		mShadowShader->SetMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+
+	for (auto& car : mCars)
+	{
+		car->Draw(mShadowShader);
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Engine::MainPass()
 {
+	glViewport(0, 0, mWidth, mHeight);
+
 	// Draw scene
 	glBindFramebuffer(GL_FRAMEBUFFER, mMainFBO);
 	glEnable(GL_DEPTH_TEST);
@@ -248,12 +287,7 @@ void Engine::MainPass()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	mMainShader->Use();
-
-	Matrix4 view = mCamera->GetViewMatrix();
-	Matrix4 projection = mCamera->GetProjection();
-
-	mMainShader->SetMat4("view", view);
-	mMainShader->SetMat4("projection", projection);
+	mMainShader->SetMat4("u_ViewProjection", mCamera->GetViewProjection());
 
 	for (auto& car : mCars)
 	{
@@ -267,7 +301,7 @@ void Engine::MainPass()
 		mSkyboxShader->SetInt("u_SkyboxTexture", 0);
 		mSkyboxShader->SetMat4("u_Projection", mCamera->GetProjection());
 		mSkyboxShader->SetMat4("u_View", mCamera->GetViewMatrix());
-		mEnvironment.GetIrradianvce()->Bind(0);
+		mEnvironment.GetIrradiance()->Bind(0);
 
 		mCube->Draw();
 		glDepthFunc(GL_LESS);
@@ -291,19 +325,30 @@ void Engine::MainPass()
 
 void Engine::PrepareFramebuffer()
 {
+	if (mShadowFBO) glDeleteFramebuffers(1, &mShadowFBO);
+	if (mMainFBO) glDeleteFramebuffers(1, &mMainFBO);
+	if (mColorAttachment) glDeleteTextures(1, &mColorAttachment);
+	if (mIDAttachment) glDeleteTextures(1, &mIDAttachment);
+	if (mDepthAttachment) glDeleteTextures(1, &mDepthAttachment);
+	if (mShadowMap) glDeleteTextures(1, &mShadowMap);
+	
 	/// Shadow Pass 
 	glGenFramebuffers(1, &mShadowFBO);
 
-	glGenTextures(1, &mDepthMap);
-	glBindTexture(GL_TEXTURE_2D, mDepthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, mShadowMapWidth, mShadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glGenTextures(1, &mShadowMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, mShadowMap);
+	for (GLuint i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+			mShadowMapWidth, mShadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 
 	glBindFramebuffer(GL_FRAMEBUFFER, mShadowFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mDepthMap, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mShadowMap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 
@@ -353,7 +398,7 @@ void Engine::PrepareFramebuffer()
 
 void Engine::PrepareShader()
 {
-	// mShadowShader = make_shared<class Shader>("asset/shader/shadow.vs", "asset/shader/shadow.fs");
+	mShadowShader = make_shared<class Shader>("asset/shader/shadow.vs", "asset/shader/shadow.fs", "asset/shader/shadow.gs");
 	mMainShader = make_shared<class Shader>("asset/shader/pbr.vs", "asset/shader/pbr.fs");
 	mPresentShader = make_shared<class Shader>("asset/shader/present.vs", "asset/shader/present.fs");
 	mSkyboxShader = make_shared<class Shader>("asset/shader/skybox.vs", "asset/shader/skybox.fs");

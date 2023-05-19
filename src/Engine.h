@@ -49,16 +49,16 @@ private:
 	Environment mEnvironment;
 /// Window
 private:
-	const size_t mWidth = 800;
-	const size_t mHeight = 600;
+	size_t mWidth = 800;
+	size_t mHeight = 600;
 	GLFWwindow* mWindow;
 	static Engine* sInstance;
 
 /// Render 
 private:
 	const GLuint mShadowMapWidth = 1024, mShadowMapHeight = 1024;
-	GLuint mMainFBO,mShadowFBO;
-	GLuint mDepthMap, mColorAttachment, mIDAttachment, mDepthAttachment;
+	GLuint mMainFBO = 0,mShadowFBO = 0;
+	GLuint mShadowMap = 0, mColorAttachment = 0, mIDAttachment = 0, mDepthAttachment = 0;
 	ShaderPtr mShadowShader, mMainShader, mPresentShader,mSkyboxShader;
 	GLuint mPresentVAO, mPresentVBO;
 	ModelPtr mCube;

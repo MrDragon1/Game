@@ -2,12 +2,14 @@
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out int EntityID;
 
-layout(location = 0) in vec2 TexCoords;
+in vec3 v_WorldPos;
+in vec3 v_Normal;
+in vec2 v_TexCoord;
 
-layout(binding = 0) uniform sampler2D texture1;
+uniform samplerCube uShadowMap;
 
 void main()
 {    
-    FragColor = texture(texture1, TexCoords);
+    FragColor = vec4(v_TexCoord,0.0,1.0);
     EntityID = 122;
 }

@@ -11,7 +11,7 @@ void Car::Draw(ShaderPtr shader)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, mTexture->GetID());
 
-	shader->SetMat4("model", GetModelMatrix());
+	shader->SetMat4("u_Model", GetModelMatrix());
 	mModel->Draw();
 }
 
