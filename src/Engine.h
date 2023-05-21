@@ -38,7 +38,7 @@ public:
 	void SetMouseVisible();
 	void SetMouseInvisible();
 	Vector2 GetViewportSize() { return Vector2(mWidth, mHeight); }
-	void ReadPixel();
+	int ReadPixel();
 	/// Scene
 private:
 	vector<CarPtr> mCars;

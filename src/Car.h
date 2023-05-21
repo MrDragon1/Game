@@ -30,12 +30,16 @@ public:
 
 	ModelPtr mModel;
 	Texture2DPtr mTexture;
-
+	int mEntityID;
+	bool mSelected = false;
 	Transform mTransform;
 	float mVelocity;
 	Vector2 mDirection;
 	const string mModelPath = "asset/model/car.obj";
 	const string mTexturePath = "asset/texture/test.png";
+
+
+	static int sNextID;
 };
 
 

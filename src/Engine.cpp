@@ -152,7 +152,7 @@ void Engine::Init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	PrepareFramebuffer();
 	PrepareShader();
 	PrepareScene();
@@ -221,7 +221,12 @@ void Engine::OnMouseRelease(int button)
 {
 	if (button == 0) // left
 	{
-		ReadPixel();
+		int id = ReadPixel();
+		INFO("Selece object with id {}", id);
+		for (auto& car : mCars)
+		{
+			car->mSelected = car->mEntityID == id;
+		}
 	}
 	if (button == 1) // right
 	{
@@ -294,6 +299,7 @@ void Engine::MainPass()
 	// Draw scene
 	glBindFramebuffer(GL_FRAMEBUFFER, mMainFBO);
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
 	glClearColor(0.1f, 0.5f, 0.7f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -474,8 +480,8 @@ void Engine::PrepareScene()
 	wall->mTransform.mScale = Vector3(20, 0.01, 20);
 	for (auto& mesh : wall->mModel->GetMesh()) {
 		mesh->mMaterial.Albedo = Vector3(0.8);
-		mesh->mMaterial.Roughness = 1.0f;
-		mesh->mMaterial.Metallic = 0.5f;
+		mesh->mMaterial.Roughness = 0.2f;
+		mesh->mMaterial.Metallic = 0.1f;
 	}
 }
 
@@ -501,13 +507,13 @@ void Engine::SetMouseInvisible()
 	glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void Engine::ReadPixel()
+int Engine::ReadPixel()
 {
 	auto pos = GetMousePosition();
 	glBindFramebuffer(GL_FRAMEBUFFER, mMainFBO);
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 	int pixelData;
-	glReadPixels(pos.first, pos.second, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+	glReadPixels(pos.first, mHeight - pos.second, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	std::cout << pixelData << std::endl;
+	return pixelData;
 }

@@ -1,25 +1,30 @@
 #include "Car.h"
-
+int Car::sNextID = 1;
 Car::Car(Vector3 pos)
 {
 	mTransform.mPosition = pos;
 	mModel = make_shared<Model>(mModelPath);
 	mTexture = make_shared<class Texture2D>(mTexturePath);
+	mEntityID = sNextID++;
 }
 
 void Car::Draw(ShaderPtr shader)
 {
-	glActiveTexture(GL_TEXTURE0);
+	// slot must >= 4, the first 3 slots are used
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, mTexture->GetID());
 
 	shader->SetMat4("uModel", GetModelMatrix());
-	shader->SetMat4("uEntityID", 1);
+	shader->SetInt("uEntityID", mEntityID);
 
+	if (mSelected) {
+		shader->SetFloat("uEmission", 1.0f);
+	}
 	for (auto mesh : mModel->GetMesh()) {
 		shader->SetFloat3("uAlbedo", mesh->mMaterial.Albedo);
 		shader->SetFloat("uMetallic", mesh->mMaterial.Metallic);
 		shader->SetFloat("uRoughness", mesh->mMaterial.Roughness);
-		shader->SetFloat("uEmission", mesh->mMaterial.Emission);
+		if (!mSelected) shader->SetFloat("uEmission", mesh->mMaterial.Emission);
 		glBindVertexArray(mesh->VAO);
 		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->mIndices.size()), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
@@ -34,11 +39,11 @@ Wall::Wall()
 
 void Wall::Draw(ShaderPtr shader)
 {
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, mTexture->GetID());
 
 	shader->SetMat4("uModel", GetModelMatrix());
-	shader->SetMat4("uEntityID", 1);
+	shader->SetInt("uEntityID", 0);
 
 	for (auto mesh : mModel->GetMesh()) {
 		shader->SetFloat3("uAlbedo", mesh->mMaterial.Albedo);

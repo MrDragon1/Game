@@ -17,7 +17,7 @@ layout(binding = 3) uniform samplerCube uShadowMap;
 uniform vec3 uAlbedo;
 uniform float uMetallic;
 uniform float uRoughness;
-uniform float uEmisstion;
+uniform float uEmission;
 
 // Lights
 // uniform vec3 lightPositions[4];
@@ -125,12 +125,15 @@ float ShadowCalculation(vec3 fragPosWorldSpace)
     float viewDistance = length(uCamPos - fragPosWorldSpace);
     float diskRadius =  (1.0 + (viewDistance / uFarPlane)) / 25.0;
     float currentDepth = length(projCoords);
+
+    bias = 0.15;
     for (int i = 0; i < 20; ++i)
     {
-        float pcfDepth = texture(uShadowMap, projCoords  + sampleOffsetDirections[i] * diskRadius).r * uFarPlane;
+        //  + sampleOffsetDirections[i] * diskRadius
+        float pcfDepth = texture(uShadowMap, projCoords).r * uFarPlane;
         shadow += (currentDepth - bias) > pcfDepth ? 1.0 : 0.0;
     }
-    shadow /= 20.0;
+    shadow /= 20;
 
     return shadow;
 }
@@ -150,7 +153,7 @@ vec3 IBL(vec3 F0, vec3 Lr)
 
     // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
     vec2 specularBRDF = texture(uBRDFLUT, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;
-    vec3 specularIBL = specularIrradiance * (F0 * specularBRDF.x + specularBRDF.y);
+    vec3 specularIBL = specularIrradiance * (F * specularBRDF.x + specularBRDF.y);
 
     return kd * diffuseIBL + specularIBL;
 }
@@ -161,7 +164,6 @@ vec3 CalculateDirLights(vec3 F0)
     for (int i = 0; i < 1; i++) //Only one light for now
     {
         vec3 Li = normalize(uLightPos - v_WorldPos);
-//        vec3 Lradiance = uScene.DirectionalLights.Radiance * uScene.DirectionalLights.Multiplier;
         vec3 Lradiance = vec3(1.0f);
         vec3 Lh = normalize(Li + m_Params.View);
 
@@ -207,16 +209,14 @@ void main()
 
     vec3 lightContribution = CalculateDirLights(F0) * shadowScale;
 
-    vec3 iblContribution = IBL(F0, Lr) * 1.0f;
+    vec3 iblContribution = IBL(F0, Lr) * 0.3f;
 
-//    vec3 color = (ambient) * (1 - shadow) + Lo + albedo * uEmisstion;
-    vec4 color = vec4(iblContribution + lightContribution , 1.0);
-// //     HDR tonemapping
-//      color = color / (color + vec4(1.0));
-// //     gamma correct
-//      color = pow(color, vec4(1.0/2.2));
+    vec4 color = vec4(iblContribution + lightContribution + m_Params.Albedo * uEmission , 1.0);
 
-    FragColor = color;
+    color = color / (color + vec4(1.0));
+    color = pow(color, vec4(1.0/2.2));
+
+    FragColor = vec4(color.xyz,1.0);
 
     EntityID = uEntityID;
 }
