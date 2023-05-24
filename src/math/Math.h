@@ -118,6 +118,7 @@ namespace Math {
 	Matrix4 Rotate(const Matrix4& m, const Quaternion& q);
 	Vector3 Rotate(const Quaternion& q, const Vector3& v);
 	Matrix4 Scale(const Matrix4& m, const Vector3& v);
+	Vector3 Unproject(const Vector3& win, const Matrix4& modelview, const Matrix4& proj, const Vector4& viewport);
 
 	bool DecomposeTransformMatrix(const Matrix4& m, Vector3& translation, Quaternion& rotation, Vector3& scale, Vector3& skew, Vector4& perspective);
 

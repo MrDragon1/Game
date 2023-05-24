@@ -16,7 +16,7 @@ out vec2 v_TexCoord;
 void main()
 {
     v_TexCoord = a_TexCoord;
-    v_WorldPos = vec3(uModel * vec4(a_Position, 1.0));;
+    v_WorldPos = vec3(uModel * vec4(a_Position, 1.0));
     v_Normal = mat3(uModel) * a_Normal;
     gl_Position = uViewProjection * vec4(v_WorldPos, 1.0);
 }

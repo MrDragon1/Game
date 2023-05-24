@@ -1,5 +1,5 @@
 #include "Car.h"
-int Car::sNextID = 1;
+int Car::sNextID = 0;
 Car::Car(Vector3 pos)
 {
 	mTransform.mPosition = pos;
@@ -31,6 +31,11 @@ void Car::Draw(ShaderPtr shader)
 	}
 }
 
+void Car::Update(float delta)
+{
+	mTransform.mPosition += mVelocity * GetForward();
+}
+
 Wall::Wall()
 {
 	mModel = make_shared<Model>(mModelPath);
@@ -43,7 +48,7 @@ void Wall::Draw(ShaderPtr shader)
 	glBindTexture(GL_TEXTURE_2D, mTexture->GetID());
 
 	shader->SetMat4("uModel", GetModelMatrix());
-	shader->SetInt("uEntityID", 0);
+	shader->SetInt("uEntityID", -1);
 
 	for (auto mesh : mModel->GetMesh()) {
 		shader->SetFloat3("uAlbedo", mesh->mMaterial.Albedo);

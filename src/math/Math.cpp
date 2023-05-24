@@ -112,6 +112,20 @@ namespace Math {
 		return Normalize(v) * length;
 	}
 
+	Vector3 Unproject(const Vector3& win, const Matrix4& modelview, const Matrix4& proj, const Vector4& viewport)
+	{
+		Matrix4 Inverse = Math::Inverse(proj * modelview);
+
+		Vector4 tmp = Vector4(win, 1.0);
+		tmp.x = (tmp.x - float(viewport[0])) / float(viewport[2]);
+		tmp.y = (tmp.y - float(viewport[1])) / float(viewport[3]);
+		tmp = tmp * static_cast<float>(2) - static_cast<float>(1);
+
+		Vector4 obj = Inverse * tmp;
+		obj /= obj.w;
+		return Vector3(obj);
+	}
+
 	Vector2 Combine(const Vector2& a, const Vector2& b, float fa, float fb) {
 		return a * fa + b * fb;
 	}

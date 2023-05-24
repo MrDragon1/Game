@@ -25,9 +25,9 @@ public:
 	void OnMouseScroll(float offset);
 	void OnMousePress(int button);
 	void OnMouseRelease(int button);
-	void OnKeyEvent();
+	void OnEvent();
 
-
+	void UpdateScene(GLfloat delta);
 	void ShadowPass();
 	void MainPass();
 
@@ -41,6 +41,7 @@ public:
 	void SetMouseInvisible();
 	Vector2 GetViewportSize() { return Vector2(mWidth, mHeight); }
 	int ReadPixel();
+	float ReadDepth();
 	/// Scene
 private:
 	vector<CarPtr> mCars;
@@ -49,7 +50,11 @@ private:
 	Vector3 mMove = Vector3(0, 0, 0);
 	Vector3 mLightPos = Vector3(0, 5, 0);
 
+	Player mPlayer1, mPlayer2;
+	bool mPlay = false;
 	Environment mEnvironment;
+
+	unordered_map<string, bool> mIsPressed;
 	/// Window
 private:
 	size_t mWidth = 800;

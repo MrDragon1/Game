@@ -157,7 +157,7 @@ void Engine::Init()
 	PrepareShader();
 	PrepareScene();
 
-	mTextRenderer = make_shared<class TextRenderer>(mWidth,mHeight);
+	mTextRenderer = make_shared<class TextRenderer>(mWidth, mHeight);
 }
 
 void Engine::Clear()
@@ -177,11 +177,9 @@ void Engine::Run()
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+		UpdateScene(deltaTime);
 
-		mLightPos.x = cos(glfwGetTime() * 0.5) * 3.0;
-		mLightPos.z = sin(glfwGetTime() * 0.5) * 3.0;
-
-		OnKeyEvent();
+		OnEvent();
 
 		ShadowPass();
 		MainPass();
@@ -213,10 +211,11 @@ void Engine::OnMousePress(int button)
 {
 	if (button == 0) // left
 	{
-
+		mIsPressed["left"] = true;
 	}
 	if (button == 1) // right
 	{
+		mIsPressed["right"] = true;
 		mCamera->OnRightButtonPressed();
 	}
 }
@@ -225,38 +224,138 @@ void Engine::OnMouseRelease(int button)
 {
 	if (button == 0) // left
 	{
-		int id = ReadPixel();
-		INFO("Selece object with id {}", id);
-		for (auto& car : mCars)
+		mIsPressed["left"] = false;
+		if (!mPlay)
 		{
-			car->mSelected = car->mEntityID == id;
+			int id = ReadPixel();
+			if (id >= 0) //除车辆外的物体id都为-1
+			{
+				INFO("Selece car with id {}", id);
+				if (mPlayer1.mCarID == -1)  mPlayer1.mCarID = id;
+				else if (mPlayer2.mCarID == -1)  mPlayer2.mCarID = id;
+			}
+			else { //选择其他物体 则清空车辆选择
+				INFO("Deselect");
+				mPlayer1.mCarID = -1;
+				mPlayer2.mCarID = -1;
+			}
+
+			for (auto& car : mCars)
+			{
+				car->mSelected = car->mEntityID == mPlayer1.mCarID || car->mEntityID == mPlayer2.mCarID;
+			}
 		}
 	}
 	if (button == 1) // right
 	{
+		mIsPressed["right"] = false;
 		mCamera->OnRightButtonReleased();
 	}
 }
 
-void Engine::OnKeyEvent()
+void Engine::OnEvent()
 {
+	if (mIsPressed["left"])
+	{
+		if (mPlay && mPlayer2.mCarID >= 0) // Player2 车辆操控
+		{
+			CarPtr car = mCars[mPlayer2.mCarID];
+			auto pos = GetMousePosition();
+			float depth = ReadDepth();
+
+			Vector2 mousePosWorld;
+			{
+				Vector3 winPos = Vector3(pos.first, mHeight - pos.second, depth);
+				auto posWorld = Math::Unproject(winPos, mCamera->GetViewMatrix(), mCamera->GetProjection(), Vector4(0, 0, mWidth, mHeight));
+				mousePosWorld = Vector2(posWorld.x, posWorld.z);
+			}
+
+
+			Vector2 carPosWorld = Vector2(car->mTransform.mPosition.x, car->mTransform.mPosition.z);
+
+			Vector2 delta = mousePosWorld - carPosWorld;
+			// INFO("delta: {}, {}", delta.x, delta.y);
+			float dis = Math::Length(delta);
+			float angle = atan2(-delta.x, -delta.y);
+
+			// car->mTransform.mTheta = angle;
+
+			// INFO("{},{}", angle / Math::PI * 180, car->mTransform.mTheta / Math::PI * 180);
+			float theta = angle - car->mTransform.mTheta;
+			if (theta > -Math::PI && theta < Math::PI) {
+				car->mTransform.mTheta += theta * 0.05f;
+			}
+			else if (theta < -Math::PI) {
+				car->mTransform.mTheta += (2 * Math::PI + theta) * 0.05f;
+			}
+			else if (theta > Math::PI) {
+				car->mTransform.mTheta += (theta - 2 * Math::PI) * 0.05f;
+			}
+			car->mTransform.mTheta = fmod(car->mTransform.mTheta, Math::PI * 2);
+
+			{
+				float speed_change = Math::Clamp(log(dis), 0, 1) * 0.1f;
+				car->mVelocity += (speed_change - car->mVelocity) * 0.1f;
+			}
+		}
+	}
+
+
+
 	if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(mWindow, true);
+	if (glfwGetKey(mWindow, GLFW_KEY_F3) == GLFW_PRESS) {
+		if (mPlayer1.mCarID >= 0 || mPlayer2.mCarID >= 0) mPlay = true;
+	}
+	if (glfwGetKey(mWindow, GLFW_KEY_SPACE) == GLFW_PRESS)
+		mPlay = false;
 
-	if (glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS)
-		mCamera->UpdatePosition(Camera::CameraMovement::Forward);
-	if (glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS)
-		mCamera->UpdatePosition(Camera::CameraMovement::Backward);
-	if (glfwGetKey(mWindow, GLFW_KEY_A) == GLFW_PRESS)
-		mCamera->UpdatePosition(Camera::CameraMovement::Left);
-	if (glfwGetKey(mWindow, GLFW_KEY_D) == GLFW_PRESS)
-		mCamera->UpdatePosition(Camera::CameraMovement::Right);
-	if (glfwGetKey(mWindow, GLFW_KEY_Q) == GLFW_PRESS)
-		mCamera->UpdatePosition(Camera::CameraMovement::Up);
-	if (glfwGetKey(mWindow, GLFW_KEY_E) == GLFW_PRESS)
-		mCamera->UpdatePosition(Camera::CameraMovement::Down);
+	if (true) { //暂停模式自由移动视角
+		if (glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS)
+			mCamera->UpdatePosition(Camera::CameraMovement::Forward);
+		if (glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS)
+			mCamera->UpdatePosition(Camera::CameraMovement::Backward);
+		if (glfwGetKey(mWindow, GLFW_KEY_A) == GLFW_PRESS)
+			mCamera->UpdatePosition(Camera::CameraMovement::Left);
+		if (glfwGetKey(mWindow, GLFW_KEY_D) == GLFW_PRESS)
+			mCamera->UpdatePosition(Camera::CameraMovement::Right);
+		if (glfwGetKey(mWindow, GLFW_KEY_Q) == GLFW_PRESS)
+			mCamera->UpdatePosition(Camera::CameraMovement::Up);
+		if (glfwGetKey(mWindow, GLFW_KEY_E) == GLFW_PRESS)
+			mCamera->UpdatePosition(Camera::CameraMovement::Down);
 
-	mCamera->UpdatePosition(Camera::CameraMovement::None);
+		mCamera->UpdatePosition(Camera::CameraMovement::None);
+	}
+	{
+		if (mPlayer1.mCarID >= 0) //Player1 车辆操控
+		{
+			CarPtr car = mCars[mPlayer1.mCarID];
+			float mspeed = 0.001f, rspeed = 0.01f;
+			if (glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS)
+				car->mVelocity += mspeed;
+			if (glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS)
+				car->mVelocity -= mspeed;
+			if (glfwGetKey(mWindow, GLFW_KEY_LEFT) == GLFW_PRESS)
+				car->mTransform.mTheta += rspeed;
+			if (glfwGetKey(mWindow, GLFW_KEY_RIGHT) == GLFW_PRESS)
+				car->mTransform.mTheta -= rspeed;
+		}
+	}
+
+}
+
+void Engine::UpdateScene(GLfloat delta)
+{
+	if (!mPlay) return;
+
+	mLightPos.x = cos(glfwGetTime() * 0.5) * 3.0;
+	mLightPos.z = sin(glfwGetTime() * 0.5) * 3.0;
+
+	for (auto& car : mCars)
+	{
+		car->Update(delta);
+	}
+
 }
 
 void Engine::ShadowPass()
@@ -359,7 +458,7 @@ void Engine::MainPass()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mColorAttachment);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+
 		mTextRenderer->RenderText("Hello World", 25.0f, 25.0f, 0.5f, Vector3(1, 0, 0));
 	}
 }
@@ -519,6 +618,17 @@ int Engine::ReadPixel()
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 	int pixelData;
 	glReadPixels(pos.first, mHeight - pos.second, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	return pixelData;
+}
+
+float Engine::ReadDepth()
+{
+	auto pos = GetMousePosition();
+	glBindFramebuffer(GL_FRAMEBUFFER, mMainFBO);
+	glReadBuffer(GL_DEPTH_ATTACHMENT);
+	float pixelData;
+	glReadPixels(pos.first, mHeight - pos.second, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &pixelData);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	return pixelData;
 }
