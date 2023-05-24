@@ -156,6 +156,8 @@ void Engine::Init()
 	PrepareFramebuffer();
 	PrepareShader();
 	PrepareScene();
+
+	mTextRenderer = make_shared<class TextRenderer>(mWidth,mHeight);
 }
 
 void Engine::Clear()
@@ -196,6 +198,8 @@ void Engine::OnViewportChange(GLFWwindow* window, int width, int height)
 
 	glViewport(0, 0, width, height);
 	mCamera->SetViewportSize();
+
+	mTextRenderer->OnResize(width, height);
 
 	PrepareFramebuffer();
 }
@@ -354,8 +358,9 @@ void Engine::MainPass()
 		glBindVertexArray(mPresentVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mColorAttachment);
-
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		mTextRenderer->RenderText("Hello World", 25.0f, 25.0f, 0.5f, Vector3(1, 0, 0));
 	}
 }
 

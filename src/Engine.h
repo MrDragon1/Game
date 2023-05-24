@@ -4,6 +4,8 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Environment.h"
+#include "TextRenderer.h"
+
 class Engine {
 public:
 	Engine();
@@ -56,6 +58,7 @@ private:
 	static Engine* sInstance;
 
 	/// Render 
+	TextRendererPtr mTextRenderer;
 private:
 	const GLuint mShadowMapWidth = 1024, mShadowMapHeight = 1024;
 	GLuint mMainFBO = 0, mShadowFBO = 0;

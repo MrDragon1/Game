@@ -110,7 +110,7 @@ namespace Math {
 	float Determinant(const Matrix3& m);
 	float Determinant(const Matrix4& m);
 
-	Matrix4 Ortho(float left, float right, float bottom, float top, float zNear, float zFar);
+	Matrix4 Ortho(float left, float right, float bottom, float top, float zNear = 0.1f, float zFar=1000.0f);
 	Matrix4 Perspective(float fovy, float aspect, float zNear, float zFar);
 	Matrix4 LookAt(const Vector3& eye, const Vector3& center, const Vector3& up);
 	Matrix4 Translate(const Matrix4& m, const Vector3& v);
