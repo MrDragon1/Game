@@ -53,6 +53,7 @@ private:
 	Player mPlayer1, mPlayer2;
 	bool mPlay = false;
 	Environment mEnvironment;
+	Texture2DPtr mDefaultTexture, mPlayer1Texture, mPlayer2Texture;
 
 	unordered_map<string, bool> mIsPressed;
 	/// Window

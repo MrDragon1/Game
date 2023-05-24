@@ -13,12 +13,19 @@ layout(binding = 2) uniform samplerCube uPrefilterMap;
 
 layout(binding = 3) uniform samplerCube uShadowMap;
 
+layout(binding = 4) uniform sampler2D uAlbedoMap;
+layout(binding = 5) uniform sampler2D uNormalMap;
+layout(binding = 6) uniform sampler2D uRoughnessMap;
+
 // Material
 uniform vec3 uAlbedo;
 uniform float uMetallic;
 uniform float uRoughness;
 uniform float uEmission;
 
+uniform bool uUseAlbedo;
+uniform bool uUseRoughness;
+uniform bool uUseNormal;
 // Lights
 // uniform vec3 lightPositions[4];
 // uniform vec3 lightColors[4];
@@ -189,11 +196,11 @@ vec3 CalculateDirLights(vec3 F0)
 // ----------------------------------------------------------------------------
 void main()
 {
-    m_Params.Albedo     =  uAlbedo;
+    m_Params.Albedo     =  uUseAlbedo ? uAlbedo : texture(uAlbedoMap,v_TexCoord).rgb;
     m_Params.Metalness  = uMetallic;
-    m_Params.Roughness = uRoughness;
+    m_Params.Roughness = uUseRoughness ? uRoughness : texture(uRoughnessMap,v_TexCoord).r;
 
-    m_Params.Normal = normalize(v_Normal);
+    m_Params.Normal = uUseNormal ? normalize(v_Normal) : normalize(texture(uNormalMap,v_TexCoord).rgb * 2.0 - 1.0);
     m_Params.View = normalize(uCamPos - v_WorldPos);
     vec3 R = reflect(-m_Params.View, m_Params.Normal);
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);

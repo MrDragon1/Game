@@ -30,7 +30,7 @@ private:
 
 
 	TextureCubePtr mTextureCube;
-	std::string mPath = "asset/texture/Newport_Loft_Ref.hdr";
+	std::string mPath = "asset/texture/Ridgecrest_Road_Ref.hdr";
 
 	ModelPtr mCube;
 };

@@ -1,6 +1,5 @@
 #include "Engine.h"
 Engine* Engine::sInstance = nullptr;
-
 void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message,
 	const void* userParam) {
 	if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;  // ignore these non-significant error codes
@@ -242,6 +241,9 @@ void Engine::OnMouseRelease(int button)
 
 			for (auto& car : mCars)
 			{
+				if (car->mEntityID == mPlayer1.mCarID) car->mTexture = mPlayer1Texture;
+				else if (car->mEntityID == mPlayer2.mCarID) car->mTexture = mPlayer2Texture;
+				else car->mTexture = mDefaultTexture;
 				car->mSelected = car->mEntityID == mPlayer1.mCarID || car->mEntityID == mPlayer2.mCarID;
 			}
 		}
@@ -269,18 +271,13 @@ void Engine::OnEvent()
 				auto posWorld = Math::Unproject(winPos, mCamera->GetViewMatrix(), mCamera->GetProjection(), Vector4(0, 0, mWidth, mHeight));
 				mousePosWorld = Vector2(posWorld.x, posWorld.z);
 			}
-
-
 			Vector2 carPosWorld = Vector2(car->mTransform.mPosition.x, car->mTransform.mPosition.z);
-
 			Vector2 delta = mousePosWorld - carPosWorld;
-			// INFO("delta: {}, {}", delta.x, delta.y);
+
 			float dis = Math::Length(delta);
 			float angle = atan2(-delta.x, -delta.y);
 
 			// car->mTransform.mTheta = angle;
-
-			// INFO("{},{}", angle / Math::PI * 180, car->mTransform.mTheta / Math::PI * 180);
 			float theta = angle - car->mTransform.mTheta;
 			if (theta > -Math::PI && theta < Math::PI) {
 				car->mTransform.mTheta += theta * 0.05f;
@@ -299,8 +296,6 @@ void Engine::OnEvent()
 			}
 		}
 	}
-
-
 
 	if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(mWindow, true);
@@ -459,7 +454,8 @@ void Engine::MainPass()
 		glBindTexture(GL_TEXTURE_2D, mColorAttachment);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		mTextRenderer->RenderText("Hello World", 25.0f, 25.0f, 0.5f, Vector3(1, 0, 0));
+		mTextRenderer->RenderText("Player1: " + std::to_string(mPlayer1.mScore), 25.0f, mHeight - 25.0f, 0.4f, Vector3(1, 0, 0));
+		mTextRenderer->RenderText("Player2: " + std::to_string(mPlayer2.mScore), mWidth - 120.0f, mHeight - 25.0f, 0.4f, Vector3(1, 0, 0));
 	}
 }
 
@@ -569,6 +565,10 @@ void Engine::PrepareScene()
 	mCamera = make_shared<class Camera>(45.0f, float(mWidth) / float(mHeight), 0.1f, 100.0f);
 	mCube = make_shared<class Model>("asset/model/cube.obj");
 
+	mDefaultTexture = make_shared<class Texture2D>("asset/texture/default.png");
+	mPlayer1Texture = make_shared<class Texture2D>("asset/texture/player1.png");
+	mPlayer2Texture = make_shared<class Texture2D>("asset/texture/player2.png");
+
 	mEnvironment.Init(mWidth, mHeight);
 	mEnvironment.Draw();
 
@@ -578,15 +578,51 @@ void Engine::PrepareScene()
 	mCars.push_back(make_shared<class Car>(Vector3(-1, 0, -1)));
 	mCars.push_back(make_shared<class Car>(Vector3(-1, 0, 1)));
 
+	for (auto& car : mCars)
+		car->mTexture = mDefaultTexture;
 
-	auto& wall = mWalls.emplace_back(make_shared<class Wall>());
-	wall->mTransform.mPosition = Vector3(0, -0.15, 0);
-	wall->mTransform.mScale = Vector3(20, 0.01, 20);
-	for (auto& mesh : wall->mModel->GetMesh()) {
-		mesh->mMaterial.Albedo = Vector3(0.8);
-		mesh->mMaterial.Roughness = 0.2f;
-		mesh->mMaterial.Metallic = 0.1f;
+	// materials from https://www.texturecan.com/details/569/
+	//设置地面
+	{
+		auto albedo = make_shared<class Texture2D>("asset/texture/ground_color.jpg");
+		auto normal = make_shared<class Texture2D>("asset/texture/ground_normal.png");
+		auto roughness = make_shared<class Texture2D>("asset/texture/ground_roughness.jpg");
+
+		auto& wall = mWalls.emplace_back(make_shared<class Wall>("asset/model/cube.obj"));
+		wall->mTransform.mPosition = Vector3(0, -0.15, 0);
+		wall->mTransform.mScale = Vector3(20, 0.01, 20);
+		wall->mUVScale = Vector2(20, 20) * 10;
+		wall->mAlbedoTexture = albedo;
+		wall->mNormalTexture = normal;
+		wall->mRoughnessTexture = roughness;
+		for (auto& mesh : wall->mModel->GetMesh()) {
+			mesh->mMaterial.Albedo = Vector3(0.8);
+			mesh->mMaterial.Roughness = 0.2f;
+			mesh->mMaterial.Metallic = 0.1f;
+		}
 	}
+	
+	//设置墙面
+	{
+		auto albedo = make_shared<class Texture2D>("asset/texture/wall_color.jpg");
+		auto normal = make_shared<class Texture2D>("asset/texture/wall_normal.png");
+		auto roughness = make_shared<class Texture2D>("asset/texture/wall_roughness.jpg");
+
+		auto& wall = mWalls.emplace_back(make_shared<class Wall>("asset/model/cube.obj"));
+		wall->mTransform.mPosition = Vector3(10, -0.15, 0);
+		wall->mTransform.mScale = Vector3(0.1, 1, 20);
+		wall->mUVScale = Vector2(1, 20) * 3;
+		wall->mAlbedoTexture = albedo;
+		wall->mNormalTexture = normal;
+		wall->mRoughnessTexture = roughness;
+		for (auto& mesh : wall->mModel->GetMesh()) {
+			mesh->mMaterial.Albedo = Vector3(0.8);
+			mesh->mMaterial.Roughness = 0.2f;
+			mesh->mMaterial.Metallic = 0.0f;
+		}
+	}
+
+
 }
 
 std::pair<float, float> Engine::GetMousePosition()

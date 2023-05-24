@@ -109,7 +109,15 @@ MeshPtr Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		for (unsigned int j = 0; j < face.mNumIndices; j++)
 			indices.push_back(face.mIndices[j]);
 	}
-	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+	//aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+	//Texture2DPtr tex = nullptr;
+	//if (material->GetTextureCount(aiTextureType_DIFFUSE))
+	//{
+	//	aiString texPath;
+	//	material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath);
+	//	string path = texPath.C_Str();
+	//	tex = std::make_shared<Texture2D>(path);
+	//}
 
 	return make_shared<Mesh>(vertices, indices);
 }

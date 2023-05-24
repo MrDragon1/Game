@@ -42,24 +42,21 @@ public:
 
 private:
 	const string mModelPath = "asset/model/car.obj";
-	const string mTexturePath = "asset/texture/test.png";
 	static int sNextID;
 };
 
 
 class Wall {
 public:
-	Wall();
+	Wall(const string& path);
 
 	void Draw(ShaderPtr shader);
 	Matrix4 GetModelMatrix() { return mTransform.getMatrix(); }
 
 	Transform mTransform;
-
+	Vector2 mUVScale = Vector2(1, 1);
 	ModelPtr mModel;
-	Texture2DPtr mTexture;
-	const string mModelPath = "asset/model/cube.obj";
-	const string mTexturePath = "asset/texture/test.png";
+	Texture2DPtr mAlbedoTexture, mNormalTexture, mRoughnessTexture;
 };
 
 class Player {
